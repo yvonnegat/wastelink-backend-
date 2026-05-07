@@ -1,0 +1,9 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables (sensitive data)
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local   
