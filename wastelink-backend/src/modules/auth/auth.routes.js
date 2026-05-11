@@ -16,28 +16,48 @@ const router = Router();
 
 // ── POST /auth/register ───────────────────────────────────────────
 router.post('/register', validate(RegisterSchema), catchAsync(async (req, res) => {
-  const { email, password, full_name, phone, role, location, lat, lng } = req.body;
+  console.log('=== REGISTER HIT ===', req.body.email);
+  
+  try {
+    const { email, password, full_name, phone, role, location, lat, lng } = req.body;
 
-  // Create Supabase auth user
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email, password,
-    options: { data: { full_name, role } },
-  });
-  if (authError) throw Errors.badRequest(authError.message);
+    console.log('=== CALLING CREATE USER ===');
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name, role },
+    });
+    console.log('=== AUTH RESULT ===', JSON.stringify({ 
+      uid: authData?.user?.id, 
+      error: authError 
+    }, null, 2));
 
-  const uid = authData.user?.id;
-  if (!uid) throw Errors.badRequest('Registration failed — no user ID returned');
+    if (authError) throw Errors.badRequest(authError.message);
 
-  // Upsert public.users profile
-  const { data: user, error: profileError } = await supabaseAdmin
-    .from('users')
-    .insert({ id: uid, email, full_name, phone, role, location, lat, lng })
-    .select()
-    .single();
-  if (profileError) throw new Error(profileError.message);
+    const uid = authData.user?.id;
+    if (!uid) throw Errors.badRequest('Registration failed — no user ID returned');
 
-  const tokens = tokenPair(user);
-  send.created(res, { user: sanitizeUser(user), ...tokens });
+    console.log('=== CALLING PROFILE INSERT ===');
+    const { data: user, error: profileError } = await supabaseAdmin
+      .from('users')
+      .insert({ id: uid, email, full_name, phone, role, location, lat, lng })
+      .select()
+      .single();
+    console.log('=== PROFILE RESULT ===', JSON.stringify({ user, error: profileError }, null, 2));
+
+    if (profileError) {
+      await supabaseAdmin.auth.admin.deleteUser(uid);
+      throw Errors.badRequest(`Profile creation failed: ${profileError.message}`);
+    }
+
+    const tokens = tokenPair(user);
+    send.created(res, { user: sanitizeUser(user), ...tokens });
+
+  } catch (err) {
+    console.error('=== REGISTER CAUGHT ERROR ===', err);
+    throw err;
+  }
 }));
 
 // ── POST /auth/login ──────────────────────────────────────────────
