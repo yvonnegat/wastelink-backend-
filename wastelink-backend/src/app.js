@@ -17,6 +17,7 @@ import transactionsRoutes  from './modules/transactions/transactions.routes.js';
 import notificationsRoutes from './modules/notifications/notifications.routes.js';
 import uploadsRoutes       from './modules/uploads/uploads.routes.js';
 import adminRoutes         from './modules/admin/admin.routes.js';
+import mapLocationsRoutes from './modules/maplocations/maplocations.routes.js';
 
 const app = express();
 const API = `/api/${process.env.API_VERSION || 'v1'}`;
@@ -63,7 +64,7 @@ app.use(`${API}/transactions`,  transactionsRoutes);
 app.use(`${API}/notifications`, notificationsRoutes);
 app.use(`${API}/uploads`,       uploadsRoutes);
 app.use(`${API}/admin`,         adminRoutes);
-
+app.use(`${API}/map-locations`, mapLocationsRoutes);
 // ── 404 ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } });

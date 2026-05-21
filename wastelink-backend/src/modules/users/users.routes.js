@@ -17,6 +17,7 @@ router.get('/me', catchAsync(async (req, res) => {
     .select(`
       *,
       recycler_profiles (*)
+      map_locations (*)
     `)
     .eq('id', req.user.id)
     .single();
