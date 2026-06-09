@@ -16,7 +16,7 @@ router.get('/me', catchAsync(async (req, res) => {
     .from('users')
     .select(`
       *,
-      recycler_profiles (*)
+      recycler_profiles (*),
       map_locations (*)
     `)
     .eq('id', req.user.id)
