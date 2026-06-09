@@ -17,7 +17,7 @@ const router = Router();
 // ── GET /listings — public feed ───────────────────────────────────
 router.get('/', optionalAuth, catchAsync(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
-  const { waste_type, status, condition, min_qty, max_qty, sort = 'created_at' } = req.query;
+  const { waste_type, status, condition, min_qty, max_qty, seller_id, sort = 'created_at' } = req.query;
 
   let query = supabaseAdmin
     .from('listings')
@@ -35,7 +35,8 @@ router.get('/', optionalAuth, catchAsync(async (req, res) => {
   if (condition)  query = query.eq('condition', condition);
   if (min_qty)    query = query.gte('quantity_kg', parseFloat(min_qty));
   if (max_qty)    query = query.lte('quantity_kg', parseFloat(max_qty));
-
+  if (seller_id)  query = query.eq('seller_id', seller_id);
+  
   const { data, error, count } = await query;
   if (error) throw new Error(error.message);
 
