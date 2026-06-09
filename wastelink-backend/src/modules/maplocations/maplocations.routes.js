@@ -34,7 +34,7 @@ router.post(
       throw Errors.badRequest('Location coordinates required');
     }
 
-    const { data, error } = await supabaseAdmin
+    const result = await supabaseAdmin
       .from('map_locations')
       .upsert(
         {
@@ -57,6 +57,8 @@ router.post(
       )
       .select()
       .single();
+
+    const { data, error } = result;
 
     if (error) {
       console.error(error);
