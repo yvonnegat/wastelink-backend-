@@ -169,13 +169,18 @@ router.get('/summary/stats', catchAsync(async (req, res) => {
 }));
 
 // ── Status machine ────────────────────────────────────────────────
+// Flow:
+//   1. Recycler confirms pickup         (initiated  → confirmed)  [recycler]
+//   2. Seller pays cash & marks done    (confirmed  → completed)  [seller]
+//   3. Either party can cancel before confirmed
+//   4. Either party can dispute after confirmed
 function allowedTransitions(current, actorRole) {
   const machine = {
     initiated: { recycler: ['confirmed', 'cancelled'], seller: ['cancelled'] },
     pending:   { recycler: ['confirmed', 'cancelled'], seller: ['cancelled'] },
-    confirmed: { recycler: ['completed'],              seller: ['disputed'] },
+    confirmed: { recycler: ['disputed'],               seller: ['completed', 'disputed'] },
     completed: { recycler: [],                         seller: [] },
-    disputed:  { recycler: ['completed'],              seller: [] },
+    disputed:  { recycler: ['completed'],              seller: ['completed'] },
     cancelled: { recycler: [],                         seller: [] },
   };
   return machine[current]?.[actorRole] || [];

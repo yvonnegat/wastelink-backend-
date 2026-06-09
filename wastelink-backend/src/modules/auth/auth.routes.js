@@ -69,7 +69,7 @@ router.post('/login', validate(LoginSchema), catchAsync(async (req, res) => {
 
   const { data: user, error: profileError } = await supabaseAdmin
     .from('users')
-    .select('*, recycler_profiles(*), map_locations(*)')
+    .select('*, recycler_profiles(*)')
     .eq('id', authData.user.id)
     .single();
   if (profileError || !user) throw Errors.unauthorized('User profile not found');
@@ -100,7 +100,7 @@ router.post('/logout', protect, catchAsync(async (_req, res) => {
 // ── GET /auth/me ──────────────────────────────────────────────────
 router.get('/me', protect, catchAsync(async (req, res) => {
   const { data: user } = await supabaseAdmin
-    .from('users').select('*, recycler_profiles(*), map_locations(*)').eq('id', req.user.id).single();
+    .from('users').select('*, recycler_profiles(*)').eq('id', req.user.id).single();
   send.ok(res, sanitizeUser(user));
 }));
 

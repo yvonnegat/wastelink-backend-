@@ -23,7 +23,7 @@ router.get('/', optionalAuth, catchAsync(async (req, res) => {
     .from('listings')
     .select(`
       *,
-      seller:users!seller_id (id, full_name, rating, avatar_url, location),
+      seller:users!seller_id (id, full_name, rating, avatar_url, location , phone),
       listing_images (url, is_primary)
     `, { count: 'exact' })
     .neq('status', 'draft')
