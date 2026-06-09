@@ -230,6 +230,78 @@ router.post('/:id/submit', protect, requireRole('seller'), catchAsync(async (req
   send.ok(res, data);
 }));
 
+// ── POST /listings/:id/approve — CV auto-approval ─────────────────
+router.post('/:id/approve', protect, requireRole('seller'), catchAsync(async (req, res) => {
+  const listing = await assertOwner(req.params.id, req.user.id);
+
+  const allowedStatuses = ['draft', 'pending_verification'];
+  if (!allowedStatuses.includes(listing.status)) {
+    throw Errors.badRequest(`Cannot approve listing with status: ${listing.status}`);
+  }
+
+  const {
+    vision_confidence,
+    vision_quality,
+    vision_consistency,
+    vision_verdict,
+    vision_notes,
+  } = req.body;
+
+  const { data, error } = await supabaseAdmin
+    .from('listings')
+    .update({
+      status:             'verified',
+      vision_confidence,
+      vision_quality,
+      vision_consistency,
+      vision_verdict,
+      vision_notes,
+      updated_at:         new Date().toISOString(),
+    })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.log('🔴 Supabase approve error:', JSON.stringify(error));
+    throw new Error(error.message);
+  }
+
+  await createNotification(
+    listing.seller_id,
+    'listing_approved',
+    '🎉 Listing Auto-Approved',
+    `Your ${data.waste_type} listing has been verified by AI and is now live.`,
+    { listing_id: req.params.id },
+  ).catch(() => {});
+
+  send.ok(res, data);
+}));
+
+
+// ── POST /listings/:id/request-more — ask seller for more images ──
+router.post('/:id/request-more', protect, requireRole('seller'), catchAsync(async (req, res) => {
+  const listing = await assertOwner(req.params.id, req.user.id);
+
+  const { data, error } = await supabaseAdmin
+    .from('listings')
+    .update({
+      status:             'pending_verification',
+      vision_confidence:  req.body.vision_confidence,
+      vision_quality:     req.body.vision_quality,
+      vision_consistency: req.body.vision_consistency,
+      vision_verdict:     req.body.vision_verdict,
+      vision_notes:       req.body.vision_notes,
+      updated_at:         new Date().toISOString(),
+    })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  send.ok(res, data);
+}));
+
 // ── Helper ────────────────────────────────────────────────────────
 async function assertOwner(listingId, userId) {
   const { data, error } = await supabaseAdmin
