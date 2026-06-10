@@ -139,5 +139,25 @@ function sanitizeUser(user) {
   const { metadata, ...rest } = user;
   return rest;
 }
-
+router.delete('/me', protect, catchAsync(async (req, res) => {
+  const uid = req.user.id;
+ 
+  // 1. Deactivate / remove related data first (cascade if your DB
+  //    handles it; otherwise delete map_locations & recycler_profiles
+  //    before touching the user row to avoid FK constraint errors).
+  await supabaseAdmin.from('map_locations').delete().eq('user_id', uid);
+  await supabaseAdmin.from('recycler_profiles').delete().eq('user_id', uid);
+ 
+  // 2. Delete the users row
+  const { error: profileErr } = await supabaseAdmin
+    .from('users').delete().eq('id', uid);
+  if (profileErr) throw new Error(profileErr.message);
+ 
+  // 3. Delete from Supabase Auth
+  const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
+  if (authErr) throw new Error(authErr.message);
+ 
+  send.ok(res, { message: 'Account deleted successfully' });
+}));
+ 
 export default router;
